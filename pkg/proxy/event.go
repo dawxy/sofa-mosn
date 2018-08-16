@@ -92,17 +92,17 @@ func eventProcess(shard int, streamMap map[string]bool, event interface{}) {
 	switch event.(type) {
 	case *startEvent:
 		e := event.(*startEvent)
-		//log.DefaultLogger.Errorf("[start] %d %d %s", shard, e.direction, e.streamID)
+		log.DefaultLogger.Errorf("[start] %d %d %s", shard, e.direction, e.streamID)
 
 		streamMap[e.streamID] = false
 	case *stopEvent:
 		e := event.(*stopEvent)
-		//log.DefaultLogger.Errorf("[stop] %d %d %s", shard, e.direction, e.streamID)
+		log.DefaultLogger.Errorf("[stop] %d %d %s", shard, e.direction, e.streamID)
 
 		delete(streamMap, e.streamID)
 	case *resetEvent:
 		e := event.(*resetEvent)
-		//log.DefaultLogger.Errorf("[reset] %d %d %s", shard, e.direction, e.streamID)
+		log.DefaultLogger.Errorf("[reset] %d %d %s", shard, e.direction, e.streamID)
 
 		if done, ok := streamMap[e.streamID]; ok && !(done || streamProcessDone(e.stream)) {
 			switch e.direction {
@@ -117,7 +117,7 @@ func eventProcess(shard int, streamMap map[string]bool, event interface{}) {
 		}
 	case *receiveHeadersEvent:
 		e := event.(*receiveHeadersEvent)
-		//log.DefaultLogger.Errorf("[header] %d %d %s", shard, e.direction, e.streamID)
+		log.DefaultLogger.Errorf("[header] %d %d %s", shard, e.direction, e.streamID)
 
 		if done, ok := streamMap[e.streamID]; ok && !(done || streamProcessDone(e.stream)) {
 			switch e.direction {
@@ -132,7 +132,7 @@ func eventProcess(shard int, streamMap map[string]bool, event interface{}) {
 		}
 	case *receiveDataEvent:
 		e := event.(*receiveDataEvent)
-		//log.DefaultLogger.Errorf("[data] %d %d %s", shard, e.direction, e.streamID)
+		log.DefaultLogger.Errorf("[data] %d %d %s", shard, e.direction, e.streamID)
 
 		if done, ok := streamMap[e.streamID]; ok && !(done || streamProcessDone(e.stream)) {
 			switch e.direction {
@@ -150,7 +150,7 @@ func eventProcess(shard int, streamMap map[string]bool, event interface{}) {
 		}
 	case *receiveTrailerEvent:
 		e := event.(*receiveTrailerEvent)
-		//log.DefaultLogger.Errorf("[trailer] %d %d %s", shard, e.direction, e.stream.streamID)
+		log.DefaultLogger.Errorf("[trailer] %d %d %s", shard, e.direction, e.stream.streamID)
 
 		if done, ok := streamMap[e.streamID]; ok && !(done || streamProcessDone(e.stream)) {
 			switch e.direction {

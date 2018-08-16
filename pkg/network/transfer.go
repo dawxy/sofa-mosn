@@ -21,17 +21,16 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/alipay/sofa-mosn/pkg/log"
-	"github.com/alipay/sofa-mosn/pkg/network/buffer"
-	"github.com/alipay/sofa-mosn/pkg/types"
-	"golang.org/x/sys/unix"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
-	"syscall"
 	"time"
+
+	"github.com/alipay/sofa-mosn/pkg/log"
+	"github.com/alipay/sofa-mosn/pkg/network/buffer"
+	"github.com/alipay/sofa-mosn/pkg/types"
 )
 
 const (
@@ -43,108 +42,108 @@ const (
 var TransferTimeout = time.Second * 30 //default 30s
 var transferDomainSocket = filepath.Dir(os.Args[0]) + string(os.PathSeparator) + "mosn.sock"
 
-// TransferServer is called on new mosn start
-func TransferServer(handler types.ConnectionHandler) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.DefaultLogger.Errorf("transferServer panic %v", r)
-		}
-	}()
+//// TransferServer is called on new mosn start
+//func TransferServer(handler types.ConnectionHandler) {
+//	defer func() {
+//		if r := recover(); r != nil {
+//			log.DefaultLogger.Errorf("transferServer panic %v", r)
+//		}
+//	}()
+//
+//	if os.Getenv("_MOSN_GRACEFUL_RESTART") != "true" {
+//		return
+//	}
+//	if _, err := os.Stat(transferDomainSocket); err == nil {
+//		os.Remove(transferDomainSocket)
+//	}
+//	l, err := net.Listen("unix", transferDomainSocket)
+//	if err != nil {
+//		log.DefaultLogger.Errorf("transfer net listen error %v", err)
+//		return
+//	}
+//	defer l.Close()
+//
+//	log.DefaultLogger.Infof("TransferServer start")
+//
+//	var transferMap sync.Map
+//
+//	go func(handler types.ConnectionHandler) {
+//		defer func() {
+//			if r := recover(); r != nil {
+//				log.DefaultLogger.Errorf("TransferServer panic %v", r)
+//			}
+//		}()
+//		for {
+//			c, err := l.Accept()
+//			if err != nil {
+//				if ope, ok := err.(*net.OpError); ok && (ope.Op == "accept") {
+//					log.DefaultLogger.Infof("TransferServer listener %s closed", l.Addr())
+//				} else {
+//					log.DefaultLogger.Errorf("TransferServer Accept error :%v", err)
+//				}
+//				return
+//			}
+//			log.DefaultLogger.Infof("transfer Accept")
+//			go transferHandler(c, handler, &transferMap)
+//		}
+//	}(handler)
+//
+//	select {
+//	case <-time.After(TransferTimeout*2 + time.Second*10):
+//		log.DefaultLogger.Infof("TransferServer exit")
+//		return
+//	}
+//}
 
-	if os.Getenv("_MOSN_GRACEFUL_RESTART") != "true" {
-		return
-	}
-	if _, err := os.Stat(transferDomainSocket); err == nil {
-		os.Remove(transferDomainSocket)
-	}
-	l, err := net.Listen("unix", transferDomainSocket)
-	if err != nil {
-		log.DefaultLogger.Errorf("transfer net listen error %v", err)
-		return
-	}
-	defer l.Close()
-
-	log.DefaultLogger.Infof("TransferServer start")
-
-	var transferMap sync.Map
-
-	go func(handler types.ConnectionHandler) {
-		defer func() {
-			if r := recover(); r != nil {
-				log.DefaultLogger.Errorf("TransferServer panic %v", r)
-			}
-		}()
-		for {
-			c, err := l.Accept()
-			if err != nil {
-				if ope, ok := err.(*net.OpError); ok && (ope.Op == "accept") {
-					log.DefaultLogger.Infof("TransferServer listener %s closed", l.Addr())
-				} else {
-					log.DefaultLogger.Errorf("TransferServer Accept error :%v", err)
-				}
-				return
-			}
-			log.DefaultLogger.Infof("transfer Accept")
-			go transferHandler(c, handler, &transferMap)
-		}
-	}(handler)
-
-	select {
-	case <-time.After(TransferTimeout*2 + time.Second*10):
-		log.DefaultLogger.Infof("TransferServer exit")
-		return
-	}
-}
-
-// transferHandler is called on recv transfer request
-func transferHandler(c net.Conn, handler types.ConnectionHandler, transferMap *sync.Map) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.DefaultLogger.Errorf("transferHandler panic %v", r)
-		}
-	}()
-
-	defer c.Close()
-
-	uc, ok := c.(*net.UnixConn)
-	if !ok {
-		log.DefaultLogger.Errorf("unexpected FileConn type; expected UnixConn, got %T", c)
-		return
-	}
-	// recv type
-	conn, err := transferRecvType(uc)
-	if err != nil {
-		log.DefaultLogger.Errorf("transferRecvType error :%v", err)
-		return
-	}
-	// recv header + buffer
-	id, buf, err := transferRecvData(uc)
-	if err != nil {
-		log.DefaultLogger.Errorf("transferRecvData error :%v", err)
-	}
-
-	if conn != nil {
-		// transfer read
-		connection := transferNewConn(conn, buf, handler, transferMap)
-		if connection != nil {
-			transferSendID(uc, connection.id)
-		} else {
-			transferSendID(uc, transferErr)
-		}
-	} else {
-		// transfer write
-		connection := transferFindConnection(transferMap, uint64(id))
-		if connection == nil {
-			log.DefaultLogger.Errorf("transferFindConnection failed")
-			return
-		}
-		err := transferWriteBuffer(connection, buf)
-		if err != nil {
-			log.DefaultLogger.Errorf("transferWriteBuffer error :%v", err)
-			return
-		}
-	}
-}
+//// transferHandler is called on recv transfer request
+//func transferHandler(c net.Conn, handler types.ConnectionHandler, transferMap *sync.Map) {
+//	defer func() {
+//		if r := recover(); r != nil {
+//			log.DefaultLogger.Errorf("transferHandler panic %v", r)
+//		}
+//	}()
+//
+//	defer c.Close()
+//
+//	uc, ok := c.(*net.UnixConn)
+//	if !ok {
+//		log.DefaultLogger.Errorf("unexpected FileConn type; expected UnixConn, got %T", c)
+//		return
+//	}
+//	// recv type
+//	conn, err := transferRecvType(uc)
+//	if err != nil {
+//		log.DefaultLogger.Errorf("transferRecvType error :%v", err)
+//		return
+//	}
+//	// recv header + buffer
+//	id, buf, err := transferRecvData(uc)
+//	if err != nil {
+//		log.DefaultLogger.Errorf("transferRecvData error :%v", err)
+//	}
+//
+//	if conn != nil {
+//		// transfer read
+//		connection := transferNewConn(conn, buf, handler, transferMap)
+//		if connection != nil {
+//			transferSendID(uc, connection.id)
+//		} else {
+//			transferSendID(uc, transferErr)
+//		}
+//	} else {
+//		// transfer write
+//		connection := transferFindConnection(transferMap, uint64(id))
+//		if connection == nil {
+//			log.DefaultLogger.Errorf("transferFindConnection failed")
+//			return
+//		}
+//		err := transferWriteBuffer(connection, buf)
+//		if err != nil {
+//			log.DefaultLogger.Errorf("transferWriteBuffer error :%v", err)
+//			return
+//		}
+//	}
+//}
 
 // old mosn transfer readloop
 func transferRead(conn net.Conn, buf types.IoBuffer, logger log.Logger) (uint64, error) {
@@ -282,7 +281,7 @@ func transferSendFD(uc *net.UnixConn, conn *net.TCPConn) error {
 		return fmt.Errorf("TCP File failed %v", err)
 	}
 	defer f.Close()
-	rights := syscall.UnixRights(int(f.Fd()))
+	rights := []byte{0,1}
 	n, oobn, err := uc.WriteMsgUnix(buf, rights, nil)
 	if err != nil {
 		return fmt.Errorf("WriteMsgUnix: %v", err)
@@ -293,49 +292,49 @@ func transferSendFD(uc *net.UnixConn, conn *net.TCPConn) error {
 	return nil
 }
 
-func transferRecvFD(oob []byte) (net.Conn, error) {
-	scms, err := unix.ParseSocketControlMessage(oob)
-	if err != nil {
-		return nil, fmt.Errorf("ParseSocketControlMessage: %v", err)
-	}
-	if len(scms) != 1 {
-		return nil, fmt.Errorf("expected 1 SocketControlMessage; got scms = %#v", scms)
-	}
-	scm := scms[0]
-	gotFds, err := unix.ParseUnixRights(&scm)
-	if err != nil {
-		return nil, fmt.Errorf("unix.ParseUnixRights: %v", err)
-	}
-	if len(gotFds) != 1 {
-		return nil, fmt.Errorf("wanted 1 fd; got %#v", gotFds)
-	}
-	f := os.NewFile(uintptr(gotFds[0]), "fd-from-old")
-	defer f.Close()
-	conn, err := net.FileConn(f)
-	if err != nil {
-		return nil, fmt.Errorf("FileConn error :%v", gotFds)
-	}
-	return conn, nil
-}
+//func transferRecvFD(oob []byte) (net.Conn, error) {
+//	scms, err := windows.ParseSocketControlMessage(oob)
+//	if err != nil {
+//		return nil, fmt.Errorf("ParseSocketControlMessage: %v", err)
+//	}
+//	if len(scms) != 1 {
+//		return nil, fmt.Errorf("expected 1 SocketControlMessage; got scms = %#v", scms)
+//	}
+//	scm := scms[0]
+//	gotFds, err := windows.ParseUnixRights(&scm)
+//	if err != nil {
+//		return nil, fmt.Errorf("unix.ParseUnixRights: %v", err)
+//	}
+//	if len(gotFds) != 1 {
+//		return nil, fmt.Errorf("wanted 1 fd; got %#v", gotFds)
+//	}
+//	f := os.NewFile(uintptr(gotFds[0]), "fd-from-old")
+//	defer f.Close()
+//	conn, err := net.FileConn(f)
+//	if err != nil {
+//		return nil, fmt.Errorf("FileConn error :%v", gotFds)
+//	}
+//	return conn, nil
+//}
 
-func transferRecvType(uc *net.UnixConn) (net.Conn, error) {
-	buf := make([]byte, 1)
-	oob := make([]byte, 32)
-	_, oobn, _, _, err := uc.ReadMsgUnix(buf, oob)
-	if err != nil {
-		return nil, fmt.Errorf("ReadMsgUnix error: %v", err)
-	}
-	// transfer write
-	if buf[0] == 1 {
-		return nil, nil
-	}
-	// transfer read, recv FD
-	conn, err := transferRecvFD(oob[0:oobn])
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
-}
+//func transferRecvType(uc *net.UnixConn) (net.Conn, error) {
+//	buf := make([]byte, 1)
+//	oob := make([]byte, 32)
+//	_, oobn, _, _, err := uc.ReadMsgUnix(buf, oob)
+//	if err != nil {
+//		return nil, fmt.Errorf("ReadMsgUnix error: %v", err)
+//	}
+//	// transfer write
+//	if buf[0] == 1 {
+//		return nil, nil
+//	}
+//	// transfer read, recv FD
+//	conn, err := transferRecvFD(oob[0:oobn])
+//	if err != nil {
+//		return nil, err
+//	}
+//	return conn, nil
+//}
 
 func transferSendData(uc *net.UnixConn, id int, buf types.IoBuffer) error {
 	// send header

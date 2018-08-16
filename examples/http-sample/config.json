@@ -7,13 +7,14 @@
 	    "name":"serverListener",
 	    "address": "127.0.0.1:2046",
 	    "bind_port": true,
-	    "log_path": "stdout",
+			"log_path": "stdout",
+			"log_level": "DEBUG",
 	    "filter_chains": [{
 	       "tls_context":{},
 	       "filters": [{
 	           "type": "proxy",
 		   "config": {
-		      "downstream_protocol": "Http2",
+		      "downstream_protocol": "Http1",
 		      "upstream_protocol": "Http1",
 		      "virtual_hosts":[{
 		         "name":"serverHost",
@@ -33,14 +34,15 @@
 	    "name":"clientListener",
 	    "address": "127.0.0.1:2045",
 	    "bind_port": true,
-	    "log_path": "stdout",
+			"log_path": "stdout",
+			"log_level": "DEBUG",
 	    "filter_chains": [{
 	       "tls_context":{},
 	       "filters": [{
 	           "type": "proxy",
 		   "config": {
 		      "downstream_protocol": "Http1",
-		      "upstream_protocol": "Http2",
+		      "upstream_protocol": "Http1",
 		      "virtual_hosts":[{
 		         "name":"clientHost",
 			 "domains": ["*"],
@@ -77,7 +79,7 @@
 	  "max_request_per_conn": 1024,
 	  "conn_buffer_limit_bytes":32768,
 	  "hosts":[
-	     {"address":"127.0.0.1:2046"}
+	     {"address":"127.0.0.1:20460"}
 	  ]
 	}
      ]

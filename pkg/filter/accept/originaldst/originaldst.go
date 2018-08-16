@@ -18,14 +18,13 @@
 package originaldst
 
 import (
-	"errors"
 	"fmt"
 	__tl "log"
 	"net"
-	"syscall"
-
 	"github.com/alipay/sofa-mosn/pkg/log"
 	"github.com/alipay/sofa-mosn/pkg/types"
+	"strings"
+	"strconv"
 )
 
 // OriginDST filter used to find out destination address of a connection which been redirected by iptables
@@ -63,21 +62,22 @@ func (filter *originalDst) OnAccept(cb types.ListenerFilterCallbacks) types.Filt
 func getOriginalAddr(conn net.Conn) ([]byte, int, error) {
 	tc := conn.(*net.TCPConn)
 
-	f, err := tc.File()
-	if err != nil {
-		log.StartLogger.Println("get conn file error, err:", err)
-		return nil, 0, errors.New("conn has error")
-	}
+	//f, err := tc.File()
+	//if err != nil {
+	//	log.StartLogger.Println("get conn file error, err:", err)
+	//	return nil, 0, errors.New("conn has error")
+	//}
 
-	fd := int(f.Fd())
-	addr, err := syscall.GetsockoptIPv6Mreq(fd, syscall.IPPROTO_IP, SO_ORIGINAL_DST)
-
-	p0 := int(addr.Multiaddr[2])
-	p1 := int(addr.Multiaddr[3])
-
-	port := p0*256 + p1
-
-	ip := addr.Multiaddr[4:8]
-
-	return ip, port, nil
+	//fd := f.Fd()
+	//addr, err := syscall.GetsockoptInt(syscall.Handle(fd), syscall.IPPROTO_IP, SO_ORIGINAL_DST)
+	//
+	//p0 := int(addr [2])
+	//p1 := int(addr.Multiaddr[3])
+	//
+	//port := p0*256 + p1
+	//
+	//ip := addr.Multiaddr[4:8]
+	strs := strings.Split(tc.RemoteAddr().String(),":")
+	port, _ := strconv.ParseInt(strs[1],10,32)
+	return []byte(strs[0]), int(port), nil
 }

@@ -61,7 +61,7 @@ func catchSignalsCrossPlatform() {
 	go func() {
 		sigchan := make(chan os.Signal, 1)
 		signal.Notify(sigchan, syscall.SIGTERM, syscall.SIGHUP,
-			syscall.SIGQUIT, syscall.SIGUSR1, syscall.SIGUSR2)
+			syscall.SIGQUIT)
 
 		for sig := range sigchan {
 			log.DefaultLogger.Debugf("signal %s received!", sig)
@@ -81,13 +81,13 @@ func catchSignalsCrossPlatform() {
 				Stop()
 
 				os.Exit(exitCode)
-			case syscall.SIGUSR1:
-				// reopen
-				log.Reopen()
+			//case syscall.SIGUSR1:
+			//	// reopen
+			//	log.Reopen()
 			case syscall.SIGHUP:
 				// reload
 				reconfigure()
-			case syscall.SIGUSR2:
+			//case syscall.SIGUSR2:
 				// ignore
 			}
 		}
@@ -156,19 +156,20 @@ func reconfigure() {
 	os.Setenv("_MOSN_GRACEFUL_RESTART", "true")
 	os.Setenv("_MOSN_INHERIT_FD", strconv.Itoa(len(listenerFD)))
 
-	execSpec := &syscall.ProcAttr{
-		Env:   os.Environ(),
-		Files: append([]uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()}, listenerFD...),
-	}
+	//execSpec := &syscall.ProcAttr{
+	//	Env:   os.Environ(),
+	//	Files: append([]uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()}, listenerFD...),
+	//}
 
-	// Fork exec the new version of your server
-	fork, err := syscall.ForkExec(os.Args[0], os.Args, execSpec)
-	if err != nil {
-		log.DefaultLogger.Errorf("Fail to fork %v", err)
-		return
-	}
+	panic("no ForkExec")
+	//// Fork exec the new version of your server
+	//fork, err := syscall.ForkExec(os.Args[0], os.Args, execSpec)
+	//if err != nil {
+	//	log.DefaultLogger.Errorf("Fail to fork %v", err)
+	//	return
+	//}
 
-	log.DefaultLogger.Infof("SIGHUP received: fork-exec to %d", fork)
+	//log.DefaultLogger.Infof("SIGHUP received: fork-exec to %d", fork)
 
 	// Wait for new mosn start
 	time.Sleep(3 * time.Second)

@@ -199,7 +199,7 @@ func (c *connection) startReadLoop() {
 				c.logger.Infof("transferTime: Wait %d Second", randTime/1e9)
 			} else {
 				if transferTime.Before(time.Now()) {
-					goto transfer
+					panic("no transfer")
 				}
 			}
 		default:
@@ -237,10 +237,10 @@ func (c *connection) startReadLoop() {
 		}
 	}
 
-transfer:
-	c.transferChan <- transferNotify
-	id, _ := transferRead(c.rawConnection, c.readBuffer.Br, c.logger)
-	c.transferChan <- id
+//transfer:
+//	c.transferChan <- transferNotify
+//	id, _ := transferRead(c.rawConnection, c.readBuffer.Br, c.logger)
+//	c.transferChan <- id
 }
 
 func (c *connection) doRead() (err error) {
@@ -347,7 +347,7 @@ func (c *connection) startWriteLoop() {
 		case <-c.transferChan:
 			id = <-c.transferChan
 			if id != transferErr {
-				goto transfer
+				panic("no transfer 2")
 			}
 		case <-c.writeBufferChan:
 			_, err := c.doWrite()
@@ -372,21 +372,21 @@ func (c *connection) startWriteLoop() {
 		}
 	}
 
-transfer:
-	c.logger.Infof("TransferWrite begin")
-	for {
-		select {
-		case <-c.internalStopChan:
-			return
-		case <-c.writeBufferChan:
-			if c.writeBufLen() == 0 {
-				continue
-			}
-			c.writeBufferMux.Lock()
-			transferWrite(c.writeBuffer.Br, id, c.logger)
-			c.writeBufferMux.Unlock()
-		}
-	}
+//transfer:
+//	c.logger.Infof("TransferWrite begin")
+//	for {
+//		select {
+//		case <-c.internalStopChan:
+//			return
+//		case <-c.writeBufferChan:
+//			if c.writeBufLen() == 0 {
+//				continue
+//			}
+//			c.writeBufferMux.Lock()
+//			transferWrite(c.writeBuffer.Br, id, c.logger)
+//			c.writeBufferMux.Unlock()
+//		}
+//	}
 }
 
 func (c *connection) doWrite() (int64, error) {

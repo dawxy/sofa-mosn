@@ -145,7 +145,7 @@ func NewMosn(c *config.MOSNConfig) *Mosn {
 	// set TransferTimeout
 	network.TransferTimeout = server.GracefulTimeout
 	// transfer old mosn connections
-	go network.TransferServer(m.servers[0].Handler())
+	//go network.TransferServer(m.servers[0].Handler())
 	
 	return m
 }
