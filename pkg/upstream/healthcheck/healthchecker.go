@@ -19,6 +19,7 @@ package healthcheck
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/alipay/sofa-mosn/pkg/api/v2"
@@ -35,6 +36,7 @@ type sessionFactory interface {
 type healthChecker struct {
 	serviceName         string
 	healthCheckCbs      []types.HealthCheckCb
+	HealthCheckCbsMux   sync.RWMutex
 	cluster             types.Cluster
 	healthCheckSessions map[types.Host]types.HealthCheckSession
 
@@ -84,7 +86,9 @@ func (c *healthChecker) Stop() {
 }
 
 func (c *healthChecker) AddHostCheckCompleteCb(cb types.HealthCheckCb) {
+	c.HealthCheckCbsMux.Lock()
 	c.healthCheckCbs = append(c.healthCheckCbs, cb)
+	c.HealthCheckCbsMux.Unlock()
 }
 
 func (c *healthChecker) newSession(host types.Host) types.HealthCheckSession {
@@ -180,7 +184,13 @@ func (c *healthChecker) getTimeoutDuration() time.Duration {
 func (c *healthChecker) runCallbacks(host types.Host, changed bool) {
 	c.refreshHealthyStat()
 
+	c.HealthCheckCbsMux.RLock()
+	healthCheckCbs := make([]types.HealthCheckCb, 0, len(c.healthCheckCbs))
 	for _, cb := range c.healthCheckCbs {
+		healthCheckCbs = append(healthCheckCbs, cb)
+	}
+	c.HealthCheckCbsMux.RUnlock()
+	for _, cb := range healthCheckCbs {
 		cb(host, changed)
 	}
 }

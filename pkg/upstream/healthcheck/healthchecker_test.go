@@ -18,6 +18,7 @@
 package healthcheck
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -37,8 +38,8 @@ const (
 var (
 	testIntervalDeadline  = time.Duration(2*testHealthCheckInterval*testUnhealthyThreshold + 50)
 	testTimeoutDeadline   = time.Duration(2*testHealthCheckTimeout*testUnhealthyThreshold + 50)
-	failureToSuccessChain bool
-	successToFailureChain bool
+	failureToSuccessChain int32
+	successToFailureChain int32
 )
 
 type mockHealthChecker struct {
@@ -110,7 +111,7 @@ func (s *mockHealthCheckSession) mockHealthCheckAction() {
 					// fmt.Println("handle failure")
 					s.handleFailure(types.FailureActive)
 				case 3:
-					if failureToSuccessChain {
+					if atomic.LoadInt32(&failureToSuccessChain) == 1 {
 						//fmt.Println("handle success")
 						s.handleSuccess()
 					} else {
@@ -118,7 +119,7 @@ func (s *mockHealthCheckSession) mockHealthCheckAction() {
 						s.handleFailure(types.FailureActive)
 					}
 				case 4:
-					if successToFailureChain {
+					if atomic.LoadInt32(&successToFailureChain) == 1 {
 						//fmt.Println("handle failure")
 						s.handleFailure(types.FailureActive)
 					} else {
@@ -198,7 +199,7 @@ func Test_failure_2_success(t *testing.T) {
 	for {
 		checkLoop++
 		if checkLoop > 3 {
-			failureToSuccessChain = true
+			atomic.StoreInt32(&failureToSuccessChain, 1)
 		}
 
 		// (interval + interval) * threshold
@@ -232,7 +233,7 @@ func Test_success_2_failed(t *testing.T) {
 	for {
 		checkLoop++
 		if checkLoop > 3 {
-			successToFailureChain = true
+			atomic.StoreInt32(&successToFailureChain, 1)
 		}
 
 		// (interval + interval) * threshold
